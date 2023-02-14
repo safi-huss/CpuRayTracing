@@ -1,25 +1,6 @@
-#define __STDC_LIB_EXT1__
-#define _USE_MATH_DEFINES
-#include <iostream>
-#include <string>
-#include <memory>
-#include <chrono>
-#include <vector>
-#include <sstream>
-#include <fstream>
-#include <algorithm>
-#include <iomanip>
-#include <cmath>
-
-#include <float.h>
-
-#ifdef _WIN32
 #include "app.h"
+
 #include "cpuraytracing.h"
-#elif defined(__linux)
-#include "include/app.h"
-#include "include/cpuraytracing.h"
-#endif
 
 const float LOCAL_EPSILON = 0.00004f;
 
