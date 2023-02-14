@@ -139,6 +139,9 @@
   <ItemGroup>
     <Text Include="Makefile" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="src\config.mk" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

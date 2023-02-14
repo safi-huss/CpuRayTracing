@@ -1,36 +1,5 @@
-#ifdef _WIN32
 #include "app.h"
 #include "cpuraytracing.h"
-#else
-#define __STDC_LIB_EXT1__
-#define _USE_MATH_DEFINES
-#include <iostream>
-#include <string>
-#include <memory>
-#include <chrono>
-#include <vector>
-#include <sstream>
-#include <fstream>
-#include <algorithm>
-#include <iomanip>
-#include <cmath>
-
-//Fix for M_PI_2
-#define M_PI_2     1.57079632679489661923   // pi/2
-
-#include <float.h>
-
-#define GLM_FORCE_CXX98
-#define GLM_FORCE_ALIGNED_GENTYPES
-#define GLM_EXT_INCLUDED
-#define GLM_ENABLE_EXPERIMENTAL
-#include "../glm/glm.hpp"
-#include "../glm/ext.hpp"
-#include "../glm/gtx/component_wise.hpp"
-
-#include "../include/cpuraytracing.h"
-
-#endif
 
 const uint32_t LEVEL_0_TEXTURE_SIDE_LENGTH = 128;
 
