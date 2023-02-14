@@ -1,7 +1,7 @@
 #ifdef _WIN32
 #include "app.h"
 #include "cpuraytracing.h"
-#elif defined(__linux)
+#else
 #define __STDC_LIB_EXT1__
 #define _USE_MATH_DEFINES
 #include <iostream>
