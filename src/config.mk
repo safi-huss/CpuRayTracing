@@ -2,4 +2,4 @@ SOURCES = \
 		main.cpp \
 		cpuraytracing.cpp
 
-CXXFLAGS = -std=c++20
+CXXFLAGS = -std=gnu++17
