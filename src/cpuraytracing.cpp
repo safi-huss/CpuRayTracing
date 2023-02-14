@@ -1,6 +1,10 @@
+#ifdef _WIN32
 #include "app.h"
-
 #include "cpuraytracing.h"
+#elif defined(__linux)
+#include "include/app.h"
+#include "include/cpuraytracing.h"
+#endif
 
 const float LOCAL_EPSILON = 0.00004f;
 
