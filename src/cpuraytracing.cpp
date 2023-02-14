@@ -15,6 +15,9 @@
 #include <iomanip>
 #include <cmath>
 
+//Fix for M_PI_2
+#include <math.h>
+
 #include <float.h>
 
 #define GLM_FORCE_CXX98
