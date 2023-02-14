@@ -55,10 +55,10 @@ void CpuRayBoundingBoxIntersect(
         t1.y = (temp.y > t1.y) ? temp.y : t1.y;
         t1.z = (temp.z > t1.z) ? temp.z : t1.z;
 
-        float tmin = (isinf(t0.x)) ? t0.y : ((isinf(t0.y)) ? t0.x : fmax(t0.x, t0.y));
-        tmin = (isinf(tmin)) ? t0.z : ((isinf(t0.z)) ? tmin : fmax(tmin, t0.z));
-        float tmax = (isinf(t1.x)) ? t1.y : ((isinf(t1.y)) ? t1.x : fmin(t1.x, t1.y));
-        tmax = (isinf(tmax)) ? t1.z : ((isinf(t1.z)) ? tmax : fmin(tmax, t1.z));
+        float tmin = (glm::isinf(t0.x)) ? t0.y : ((glm::isinf(t0.y)) ? t0.x : fmax(t0.x, t0.y));
+        tmin = (glm::isinf(tmin)) ? t0.z : ((glm::isinf(t0.z)) ? tmin : fmax(tmin, t0.z));
+        float tmax = (glm::isinf(t1.x)) ? t1.y : ((glm::isinf(t1.y)) ? t1.x : fmin(t1.x, t1.y));
+        tmax = (glm::isinf(tmax)) ? t1.z : ((glm::isinf(t1.z)) ? tmax : fmin(tmax, t1.z));
 
         arg_outpIntersect[idx_ray] = tmax > tmin;
     }
