@@ -23,6 +23,7 @@
 #include <glm/ext.hpp>
 #include <glm/gtx/component_wise.hpp>
 #else
+#define GLM_FORCE_CXX98
 #define GLM_FORCE_ALIGNED_GENTYPES
 #define GLM_EXT_INCLUDED
 #define GLM_ENABLE_EXPERIMENTAL
