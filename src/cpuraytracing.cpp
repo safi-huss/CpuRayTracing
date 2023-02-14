@@ -17,8 +17,7 @@
 
 #include <float.h>
 
-#undef GLM_HAS_CXX11_STL
-
+#define GLM_FORCE_CXX98
 #define GLM_FORCE_ALIGNED_GENTYPES
 #define GLM_EXT_INCLUDED
 #define GLM_ENABLE_EXPERIMENTAL
