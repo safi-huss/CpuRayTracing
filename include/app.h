@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __APP_H__
+#define __APP_H__
 
 #define __STDC_LIB_EXT1__
 #define _USE_MATH_DEFINES
@@ -21,3 +22,5 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <glm/gtx/component_wise.hpp>
+
+#endif // !__APP_H__
