@@ -46,7 +46,7 @@ int main()
         .m_eLightType = 2,
         .m_v3Color = glm::vec3(255.f, 255.f, 255.f),
         .m_v3Direction = glm::normalize(glm::vec3(0.f, 0.f, 1.f)),
-        .m_v3Location = glm::vec3(0.f, 0.f, -1000.f),
+        .m_v3Location = glm::vec3(-10.f, 0.f, -1000.f),
         .m_fInnerRadialAngle = 0.f,
         .m_fOuterRadialAngle = 0.f,
         .m_fAttenuation = 0.f
@@ -143,8 +143,10 @@ int main()
 
     std::vector<uint32_t> imageOutputTexture1(LEVEL_0_TEXTURE_SIDE_LENGTH * LEVEL_0_TEXTURE_SIDE_LENGTH);
     std::vector<uint32_t> imageOutputTexture2(LEVEL_0_TEXTURE_SIDE_LENGTH * LEVEL_0_TEXTURE_SIDE_LENGTH);
+    std::vector<uint32_t> imageOutputTexture3(LEVEL_0_TEXTURE_SIDE_LENGTH * LEVEL_0_TEXTURE_SIDE_LENGTH);
     std::pair<uint32_t, uint32_t> dimOutputTexture1(LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
     std::pair<uint32_t, uint32_t> dimOutputTexture2(LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
+    std::pair<uint32_t, uint32_t> dimOutputTexture3(LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
 
     for (auto idx_tri = 0; idx_tri < 12; idx_tri++) {
         glm::vec3 pTriangle[3] = {
@@ -190,10 +192,17 @@ int main()
     pvecObjLocns->push_back(glm::vec3(0.5f, 0.5f, -10.f));
     pvecObjOrnts->push_back(glm::quat(1.f, 0.f, 0.f, 0.f));
 
+    //Object 2
+    pvecObjAabbs->push_back(v3AabBox);
+    pvecObjLocns->push_back(glm::vec3(-2.5f, 0.f, 0.f));
+    pvecObjOrnts->push_back(glm::quat(1.f, 0.f, 0.f, 0.f));
+
     pvecOutTextures->push_back(imageOutputTexture1);
     pvecOutTextures->push_back(imageOutputTexture2);
+    pvecOutTextures->push_back(imageOutputTexture3);
     pvecOutTextureDims->push_back(dimOutputTexture1);
     pvecOutTextureDims->push_back(dimOutputTexture2);
+    pvecOutTextureDims->push_back(dimOutputTexture3);
 
     CpuRayTracing::SetLights(pvecLights);
     CpuRayTracing::SetObjectAabBoxes(pvecObjAabbs);
@@ -221,4 +230,5 @@ int main()
     //Write Textures
     WriteTexture("Texture0.txt", pvecOutTextures->at(0), LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
     WriteTexture("Texture1.txt", pvecOutTextures->at(1), LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
+    WriteTexture("Texture2.txt", pvecOutTextures->at(2), LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
 }

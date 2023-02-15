@@ -178,7 +178,7 @@ void CpuCastReflectionToTextures(
 
                         if (cast_pt_param < min_dist - LOCAL_EPSILON) {
                             min_dist = cast_pt_param;
-                            idx_reflect_tri = idx_tri_per_ray;
+                            idx_reflect_tri = idx_tri_per_ray - idx_ray_int;
                         }
                     }
                 }
@@ -593,6 +593,8 @@ namespace CpuRayTracing
                         vecReflectedTriangleNormals,
                         vecInRayWeights,
                         0.707f);
+
+                    dRayTriangleInstersectCount = dTriangleCount * vecReflectedRayDirections.size();
 
                     //Now cycle through all the other objects
                     for (auto idx_other_obj = 0u; idx_other_obj < dObjectCount; idx_other_obj++) {
