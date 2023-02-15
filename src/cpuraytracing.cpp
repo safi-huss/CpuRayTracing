@@ -84,14 +84,16 @@ void CpuRayTriangleIntersect(
     }
 }
 
-void CpuCastToTextures(
+void CpuCastShadowToTextures(
     /*[out]*/   std::vector<uint32_t>& arg_outTexture,
     /*[out]*/   std::vector<uint8_t>& arg_outRaysToReflect,
+    /*[out]*/   std::vector<glm::vec3>& arg_outpRayReflectionNormals,
     /*[in]*/    std::vector<uint8_t>& arg_inpTriIntersect,
     /*[in]*/    std::vector<float>& arg_inpTriIntersectParam,
     /*[in]      const float3* arg_inpRayDirs,*/
     /*[in]*/    const std::vector<glm::vec3>& arg_inpRayPnts,
     /*[in]*/    const std::vector<glm::vec3>& arg_inTex3dPtLookUp,
+    /*[in]*/    const std::vector<glm::vec3>& arg_inTriNormLookUp,
     /*[in]*/    const std::vector<glm::vec2>& arg_inUvCoordLookUp,
     /*[in]*/    const uint32_t  arg_indTexWidth,
     /*[in]*/    const uint32_t  arg_indTexHeight,
@@ -129,11 +131,60 @@ void CpuCastToTextures(
                 //Cast Shadow
                 arg_outTexture[(uint32_t)tex_coord.x + ((uint32_t)tex_coord.y * arg_indTexWidth)] = 255;
                 arg_outRaysToReflect[idx_ray] = 0;
+                arg_outpRayReflectionNormals[idx_ray] = glm::vec3();
             }
             else if (bCastShadow == 0) {
                 //Light it up
                 //Later
                 arg_outRaysToReflect[idx_ray] = 1;
+                arg_outpRayReflectionNormals[idx_ray] = arg_inTriNormLookUp[idx_ray];
+            }
+        }
+    }
+}
+
+void CpuCastReflectionToTextures(
+    /*[out]*/   std::vector<uint32_t>& arg_outTexture,
+    /*[in]*/    std::vector<uint8_t>& arg_inpTriIntersect,
+    /*[in]*/    std::vector<float>& arg_inpTriIntersectParam,
+    /*[in]*/    const std::vector<glm::vec3>& arg_inpRayDirs,
+    /*[in]*/    const std::vector<glm::vec3>& arg_inpRayPnts,
+    /*[in]*/    const uint32_t  arg_indTexWidth,
+    /*[in]*/    const uint32_t  arg_indTexHeight,
+    /*[in]*/    const uint32_t  arg_indNumVert)
+{
+    uint32_t num_tri = arg_indNumVert / 3;
+
+    for (uint64_t idx_ray = 0; idx_ray < arg_inpRayPnts.size(); idx_ray++) {
+        //Calculate index in the Ray-Triangle Matrix
+        uint32_t idx_ray_int = idx_ray * num_tri;
+        uint8_t bCastShadow = 0;
+
+        //index gaurd
+        if (idx_ray_int < arg_inpTriIntersect.size()) {
+
+            //Traverse over triangles
+            for (uint32_t idx_tri_per_ray = idx_ray_int; idx_tri_per_ray < (idx_ray_int + num_tri); idx_tri_per_ray++) {
+                //index gaurd
+                if (idx_tri_per_ray < arg_inpTriIntersect.size()) {
+                    if (arg_inpTriIntersect[idx_tri_per_ray] != 0) {
+                        glm::vec3 cast_point_3d = arg_inpRayDirs[idx_ray] * arg_inpTriIntersectParam[idx_tri_per_ray] + arg_inpRayPnts[idx_ray];
+                        float cast_pt_param = length(cast_point_3d - arg_inpRayPnts[idx_ray]);
+
+                        if (cast_pt_param > arg_inpTriIntersectParam[idx_tri_per_ray] + LOCAL_EPSILON) {
+                            bCastShadow = 1;
+                        }
+                    }
+                }
+            }
+
+            //Find UV Coord
+
+            if (bCastShadow == 1) {
+                //Cast Shadow
+            }
+            else if (bCastShadow == 0) {
+                //Light it up
             }
         }
     }
@@ -302,19 +353,33 @@ void GenerateReflectedRays(
             const glm::vec3& v3NewStartPt = arg_vecInReflectionPts[idx_in_rays];
             const glm::vec3& v3ReflectionNormal = arg_vecInReflectionNorms[idx_in_rays];
             const glm::vec3& v3RayIncidenceDir = arg_vecInRayDirections[idx_in_rays];
+            const float& fInWeight = arg_vecInRayWeight[idx_in_rays];
 
             glm::vec3 v3NegIncidence = -v3RayIncidenceDir;
 
             float fAngleFromNormal = acos(glm::dot(v3NegIncidence, v3ReflectionNormal) / (glm::length(v3NegIncidence) * glm::length(v3ReflectionNormal)));
 
             for (auto idx_gen_rays = 0; idx_gen_rays < dNumRays; idx_gen_rays++) {
-                float fNewRayAngle = libUncertainFloatGaussDist(-fAngleFromNormal, arg_fMaterialRoughness * (M_PI_2 - fAngleFromNormal));
+                float fNewRayAngle = 
+#ifdef _WIN32
+                    (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * (M_PI_2 - fAngleFromNormal);
+#else
+                    libUncertainFloatGaussDist(-fAngleFromNormal, arg_fMaterialRoughness * (M_PI_2 - fAngleFromNormal));
+#endif
                 glm::vec3 f3RotationNormal = glm::normalize(glm::cross(v3NegIncidence, v3ReflectionNormal));
 
                 glm::vec3 v3NewDirection = glm::rotate(v3NewDirection, fNewRayAngle, f3RotationNormal);
 
+                float fWeight =
+#ifdef _WIN32
+                    (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * fInWeight;
+#else
+                    (1.f / (sqrt(2.f * M_PI) * arg_fMaterialRoughness)) * exp((-1.f / 2.f) * pow((fAngleFromNormal / arg_fMaterialRoughness), 2.f)) * fInWeight;
+#endif
+
                 arg_vecOutRayDirections.push_back(v3NewDirection);
                 arg_vecOutRayStartPts.push_back(v3NewStartPt);
+                arg_vecOutRayWeight.push_back(fWeight);
             }
 
             
@@ -381,7 +446,7 @@ namespace CpuRayTracing
 
     }
 
-    void PipelineRun(uint32_t arg_dState)
+    void PipelineRun()
     {
         try {
             for (auto iter_light = m_pvecLight->begin(); iter_light != m_pvecLight->end(); iter_light++) {
@@ -392,34 +457,35 @@ namespace CpuRayTracing
                     size_t dTriangleCount = m_pvecObjectVertices->size() / 3;
                     auto& vecObjectOutTexture = (*(m_pvecOutTextures.get()))[idx_obj];
                     auto& dimObjectTextureDims = (*(m_pvecOutTextureDims.get()))[idx_obj];
+                    std::vector<float> vecInRayWeights, vecOutRayWeights;
+                    std::vector<glm::vec3> vecReflectedTriangleNormals;
+                    std::vector<glm::vec3> vecReflectedRayOrigins;
+                    std::vector<glm::vec3> vecReflectedRayDirections;
 
-                    if (arg_dState == CPURAYTRACING_LIGHT_CASTING) {
-                        //Generate 3D Points for all Uv Coordinates of an Object
-                        Generate3dPointsForUvPoints(
-                            *(m_pvecObjectGenerated3dTexPts.get()),
-                            *(m_pvecObjectGenerated3dNormals.get()),
-                            *(m_pvecObjectGeneratedUvTexPts.get()),
-                            *(m_pvecObjectVertices.get()),
-                            *(m_pvecObjectVNormals.get()),
-                            *(m_pvecObjectUvCoords.get()),
-                            m_pvecObjectLocation->at(idx_obj),
-                            m_pvecObjectOrientation->at(idx_obj),
-                            dimObjectTextureDims.first,
-                            dimObjectTextureDims.second);
+                    //Generate 3D Points for all Uv Coordinates of an Object
+                    Generate3dPointsForUvPoints(
+                        *(m_pvecObjectGenerated3dTexPts.get()),
+                        *(m_pvecObjectGenerated3dNormals.get()),
+                        *(m_pvecObjectGeneratedUvTexPts.get()),
+                        *(m_pvecObjectVertices.get()),
+                        *(m_pvecObjectVNormals.get()),
+                        *(m_pvecObjectUvCoords.get()),
+                        m_pvecObjectLocation->at(idx_obj),
+                        m_pvecObjectOrientation->at(idx_obj),
+                        dimObjectTextureDims.first,
+                        dimObjectTextureDims.second);
 
-                        //Generate Rays from above 3d points
-                        GenerateRaysFrom3dPoints(
-                            *(m_pvecRayNormals.get()),
-                            *(m_pvecRayStartPts.get()),
-                            *(m_pvecObjectGenerated3dTexPts.get()),
-                            objLight);
+                    //Generate Rays from above 3d points
+                    GenerateRaysFrom3dPoints(
+                        *(m_pvecRayNormals.get()),
+                        *(m_pvecRayStartPts.get()),
+                        *(m_pvecObjectGenerated3dTexPts.get()),
+                        objLight);
 
-                        //Reflection Data Init
-                        m_pvecRaysToReflect->assign(m_pvecRayNormals->size(), 0);
-                    }
-                    else if (arg_dState == CPURAYTRACING_REFLECT_CASTING) {
-                        return; //Just for now
-                    }
+                    //Reflection Data Init
+                    m_pvecRaysToReflect->assign(m_pvecRayNormals->size(), 0);
+                    vecInRayWeights.assign(m_pvecRayNormals->size(), 1.f);
+                    vecReflectedTriangleNormals.assign(m_pvecRayNormals->size(), glm::vec3());
 
                     //Calculate Possible Ray Triangle Intersections
                     size_t dRayTriangleInstersectCount = dTriangleCount * m_pvecRayNormals->size();
@@ -455,23 +521,77 @@ namespace CpuRayTracing
                             f3hObjectLoc,
                             f4hObjectOrt);
 
-                        CpuCastToTextures(
+                        CpuCastShadowToTextures(
                             (*(m_pvecOutTextures.get()))[idx_obj],
                             *(m_pvecRaysToReflect.get()),
+                            vecReflectedTriangleNormals,
                             vecOutRayTriIntersect,
                             vecOutRayTriIntersectParam,
                             *(m_pvecRayStartPts.get()),
                             *(m_pvecObjectGenerated3dTexPts.get()),
+                            *(m_pvecObjectGenerated3dNormals.get()),
                             *(m_pvecObjectGeneratedUvTexPts.get()),
                             dimObjectTextureDims.first,
                             dimObjectTextureDims.second,
                             m_pvecObjectVertices->size());
                     }
 
-                    m_pvecObjectGenerated3dTexPts->erase(m_pvecObjectGenerated3dTexPts->begin(), m_pvecObjectGenerated3dTexPts->end());
-                    m_pvecObjectGeneratedUvTexPts->erase(m_pvecObjectGeneratedUvTexPts->begin(), m_pvecObjectGeneratedUvTexPts->end());
+                    //Prepare For Reflections
+                    GenerateReflectedRays(
+                        vecReflectedRayDirections,
+                        vecReflectedRayOrigins,
+                        vecOutRayWeights,
+                        *(m_pvecRaysToReflect.get()),
+                        *(m_pvecRayNormals.get()),
+                        *(m_pvecObjectGenerated3dTexPts.get()),
+                        vecReflectedTriangleNormals,
+                        vecInRayWeights,
+                        0.707f);
+
+                    //Now cycle through all the other objects
+                    for (auto idx_other_obj = 0u; idx_other_obj < dObjectCount; idx_other_obj++) {
+                        //if (idx_other_obj == idx_obj) continue;
+
+                        glm::vec3& f3hAabBox = m_pvecObjectAabBox->at(idx_other_obj);
+                        glm::vec3& f3hObjectLoc = m_pvecObjectLocation->at(idx_other_obj);
+                        glm::quat& f4hObjectOrt = m_pvecObjectOrientation->at(idx_other_obj);
+
+                        std::vector<uint8_t> vecOutRayBoxIntersect(vecReflectedRayDirections.size());
+                        std::vector<uint32_t> vecOutRayTriIntersectIndex(vecReflectedRayDirections.size());
+                        std::vector<uint8_t> vecOutRayTriIntersect(dRayTriangleInstersectCount);
+                        std::vector<float> vecOutRayTriIntersectParam(dRayTriangleInstersectCount);
+
+                        CpuRayBoundingBoxIntersect(
+                            vecOutRayBoxIntersect,
+                            vecReflectedRayDirections,
+                            vecReflectedRayOrigins,
+                            f3hAabBox,
+                            f3hObjectLoc,
+                            f4hObjectOrt);
+
+                        uint32_t dFindAnyIntersects = 0;
+                        for (auto iter_intersect = vecOutRayBoxIntersect.begin(); iter_intersect != vecOutRayBoxIntersect.end(); iter_intersect++) {
+                            dFindAnyIntersects += *iter_intersect;
+                        }
+
+                        if (dFindAnyIntersects == 0) continue;
+
+                        CpuRayTriangleIntersect(
+                            vecOutRayTriIntersect,
+                            vecOutRayTriIntersectParam,
+                            vecOutRayTriIntersectIndex,
+                            vecReflectedRayDirections,
+                            vecReflectedRayOrigins,
+                            *(m_pvecObjectVertices.get()),
+                            f3hObjectLoc,
+                            f4hObjectOrt);
+                    }
+
                     m_pvecRayNormals->erase(m_pvecRayNormals->begin(), m_pvecRayNormals->end());
                     m_pvecRayStartPts->erase(m_pvecRayStartPts->begin(), m_pvecRayStartPts->end());
+
+                    m_pvecObjectGenerated3dTexPts->erase(m_pvecObjectGenerated3dTexPts->begin(), m_pvecObjectGenerated3dTexPts->end());
+                    m_pvecObjectGeneratedUvTexPts->erase(m_pvecObjectGeneratedUvTexPts->begin(), m_pvecObjectGeneratedUvTexPts->end());
                 }
             }
         }

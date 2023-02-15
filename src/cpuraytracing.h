@@ -19,7 +19,7 @@ namespace CpuRayTracing
 
 	void PipelineCreate();
 	void PipelineInit();
-	void PipelineRun(uint32_t arg_dState);
+	void PipelineRun();
 
 	std::shared_ptr<std::vector<glm::vec3>> GetRayStartPts();
 	std::shared_ptr<std::vector<glm::vec3>> GetRayNormals();

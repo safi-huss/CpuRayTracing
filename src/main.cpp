@@ -212,7 +212,7 @@ int main()
 
     std::chrono::high_resolution_clock::time_point timeStartProcess = std::chrono::high_resolution_clock::now();
 
-    CpuRayTracing::PipelineRun(0);
+    CpuRayTracing::PipelineRun();
 
     std::chrono::high_resolution_clock::time_point timeEndProcess = std::chrono::high_resolution_clock::now();
 
