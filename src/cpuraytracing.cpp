@@ -129,14 +129,14 @@ void CpuCastShadowToTextures(
 
             if (bCastShadow == 1) {
                 //Cast Shadow
-                arg_outTexture[(uint32_t)tex_coord.x + ((uint32_t)tex_coord.y * arg_indTexWidth)] = 255;
+                arg_outTexture[(uint32_t)tex_coord.x + ((uint32_t)tex_coord.y * arg_indTexWidth)] = 0x000000FF;
                 arg_outRaysToReflect[idx_ray] = 0;
                 arg_outpRayReflectionNormals[idx_ray] = glm::vec3();
             }
             else if (bCastShadow == 0) {
                 //Light it up
                 //Later
-                arg_outTexture[(uint32_t)tex_coord.x + ((uint32_t)tex_coord.y * arg_indTexWidth)] = 0xFFFFFFFF;
+                //arg_outTexture[(uint32_t)tex_coord.x + ((uint32_t)tex_coord.y * arg_indTexWidth)] = 0xFFFFFFFF;
                 arg_outRaysToReflect[idx_ray] = 1;
                 arg_outpRayReflectionNormals[idx_ray] = arg_inTriNormLookUp[idx_ray];
             }

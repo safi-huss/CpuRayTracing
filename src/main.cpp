@@ -13,9 +13,10 @@ void WriteTexture(std::string arg_strFilename, std::vector<uint32_t> arg_vecText
         for (uint32_t idx_x = 0; idx_x < arg_dTextureWidth; idx_x++) {
             uint32_t pixel = arg_vecTexture[idx_x + idx_y * arg_dTextureWidth];
 
-            if ((pixel & 0xFF) == 0) fileOut << 'X';
-            else if ((pixel & 0xFF) && ((pixel & 0xFFFFFF00) == 0)) fileOut << '0';
+            if (pixel == 0x00000000) fileOut << 'X';
             else if (pixel == 0xFFFFFFFF) fileOut << '1';
+            else if (pixel == 0xAAAAAAFF) fileOut << 'Z';
+            else if (pixel == 0x000000FF) fileOut << '0';
         }
 
         fileOut << std::endl;
@@ -143,10 +144,8 @@ int main()
 
     std::vector<uint32_t> imageOutputTexture1(LEVEL_0_TEXTURE_SIDE_LENGTH * LEVEL_0_TEXTURE_SIDE_LENGTH);
     std::vector<uint32_t> imageOutputTexture2(LEVEL_0_TEXTURE_SIDE_LENGTH * LEVEL_0_TEXTURE_SIDE_LENGTH);
-    std::vector<uint32_t> imageOutputTexture3(LEVEL_0_TEXTURE_SIDE_LENGTH * LEVEL_0_TEXTURE_SIDE_LENGTH);
     std::pair<uint32_t, uint32_t> dimOutputTexture1(LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
     std::pair<uint32_t, uint32_t> dimOutputTexture2(LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
-    std::pair<uint32_t, uint32_t> dimOutputTexture3(LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
 
     for (auto idx_tri = 0; idx_tri < 12; idx_tri++) {
         glm::vec3 pTriangle[3] = {
@@ -189,20 +188,13 @@ int main()
 
     //Object 1
     pvecObjAabbs->push_back(v3AabBox);
-    pvecObjLocns->push_back(glm::vec3(0.5f, 0.5f, -10.f));
-    pvecObjOrnts->push_back(glm::quat(1.f, 0.f, 0.f, 0.f));
-
-    //Object 2
-    pvecObjAabbs->push_back(v3AabBox);
-    pvecObjLocns->push_back(glm::vec3(-2.5f, 0.f, 0.f));
+    pvecObjLocns->push_back(glm::vec3(0.7f, 0.7f, -10.f));
     pvecObjOrnts->push_back(glm::quat(1.f, 0.f, 0.f, 0.f));
 
     pvecOutTextures->push_back(imageOutputTexture1);
     pvecOutTextures->push_back(imageOutputTexture2);
-    pvecOutTextures->push_back(imageOutputTexture3);
     pvecOutTextureDims->push_back(dimOutputTexture1);
     pvecOutTextureDims->push_back(dimOutputTexture2);
-    pvecOutTextureDims->push_back(dimOutputTexture3);
 
     CpuRayTracing::SetLights(pvecLights);
     CpuRayTracing::SetObjectAabBoxes(pvecObjAabbs);
@@ -230,5 +222,4 @@ int main()
     //Write Textures
     WriteTexture("Texture0.txt", pvecOutTextures->at(0), LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
     WriteTexture("Texture1.txt", pvecOutTextures->at(1), LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
-    WriteTexture("Texture2.txt", pvecOutTextures->at(2), LEVEL_0_TEXTURE_SIDE_LENGTH, LEVEL_0_TEXTURE_SIDE_LENGTH);
 }
