@@ -136,6 +136,7 @@ void CpuCastShadowToTextures(
             else if (bCastShadow == 0) {
                 //Light it up
                 //Later
+                arg_outTexture[(uint32_t)tex_coord.x + ((uint32_t)tex_coord.y * arg_indTexWidth)] = 0xFFFFFFFF;
                 arg_outRaysToReflect[idx_ray] = 1;
                 arg_outpRayReflectionNormals[idx_ray] = arg_inTriNormLookUp[idx_ray];
             }
@@ -149,19 +150,23 @@ void CpuCastReflectionToTextures(
     /*[in]*/    std::vector<float>& arg_inpTriIntersectParam,
     /*[in]*/    const std::vector<glm::vec3>& arg_inpRayDirs,
     /*[in]*/    const std::vector<glm::vec3>& arg_inpRayPnts,
+    /*[in]*/    const std::vector<glm::vec3>& arg_inpObjectVertices,
+    /*[in]*/    const std::vector<glm::vec3>& arg_inpObjectNormals,
+    /*[in]*/    const std::vector<glm::vec2>& arg_inpObjectUvCoords,
     /*[in]*/    const uint32_t  arg_indTexWidth,
-    /*[in]*/    const uint32_t  arg_indTexHeight,
-    /*[in]*/    const uint32_t  arg_indNumVert)
+    /*[in]*/    const uint32_t  arg_indTexHeight)
 {
-    uint32_t num_tri = arg_indNumVert / 3;
+    uint32_t num_tri = arg_inpObjectVertices.size() / 3;
 
     for (uint64_t idx_ray = 0; idx_ray < arg_inpRayPnts.size(); idx_ray++) {
         //Calculate index in the Ray-Triangle Matrix
         uint32_t idx_ray_int = idx_ray * num_tri;
-        uint8_t bCastShadow = 0;
+        uint32_t idx_reflect_tri = 0;
+        uint8_t bCastReflection = 0;
 
         //index gaurd
         if (idx_ray_int < arg_inpTriIntersect.size()) {
+            float min_dist = std::numeric_limits<float>::infinity();
 
             //Traverse over triangles
             for (uint32_t idx_tri_per_ray = idx_ray_int; idx_tri_per_ray < (idx_ray_int + num_tri); idx_tri_per_ray++) {
@@ -171,20 +176,61 @@ void CpuCastReflectionToTextures(
                         glm::vec3 cast_point_3d = arg_inpRayDirs[idx_ray] * arg_inpTriIntersectParam[idx_tri_per_ray] + arg_inpRayPnts[idx_ray];
                         float cast_pt_param = length(cast_point_3d - arg_inpRayPnts[idx_ray]);
 
-                        if (cast_pt_param > arg_inpTriIntersectParam[idx_tri_per_ray] + LOCAL_EPSILON) {
-                            bCastShadow = 1;
+                        if (cast_pt_param < min_dist - LOCAL_EPSILON) {
+                            min_dist = cast_pt_param;
+                            idx_reflect_tri = idx_tri_per_ray;
                         }
                     }
                 }
             }
 
-            //Find UV Coord
+            if (min_dist != std::numeric_limits<float>::infinity()) {
+                glm::vec3 f3TestPoint = arg_inpRayDirs[idx_ray] * arg_inpTriIntersectParam[idx_reflect_tri] + arg_inpRayPnts[idx_ray];
 
-            if (bCastShadow == 1) {
-                //Cast Shadow
-            }
-            else if (bCastShadow == 0) {
-                //Light it up
+                //Find UV Coord
+                const glm::vec3& f3TriVert1 = arg_inpObjectVertices[idx_reflect_tri * 3 + 0];
+                const glm::vec3& f3TriVert2 = arg_inpObjectVertices[idx_reflect_tri * 3 + 1];
+                const glm::vec3& f3TriVert3 = arg_inpObjectVertices[idx_reflect_tri * 3 + 2];
+
+                const glm::vec3& f3TriNorm1 = arg_inpObjectNormals[idx_reflect_tri * 3 + 0];
+                const glm::vec3& f3TriNorm2 = arg_inpObjectNormals[idx_reflect_tri * 3 + 1];
+                const glm::vec3& f3TriNorm3 = arg_inpObjectNormals[idx_reflect_tri * 3 + 2];
+
+                const glm::vec3 f3TriEdge1 = f3TriVert2 - f3TriVert1;
+                const glm::vec3 f3TriEdge2 = f3TriVert3 - f3TriVert2;
+                const glm::vec3 f3TriEdge3 = f3TriVert1 - f3TriVert3;
+
+                //Check point is inside the triangle
+                const glm::vec3 f3Cross1 = glm::cross(f3TriEdge1, f3TestPoint - f3TriVert1);
+                const glm::vec3 f3Cross2 = glm::cross(f3TriEdge2, f3TestPoint - f3TriVert2);
+                const glm::vec3 f3Cross3 = glm::cross(f3TriEdge3, f3TestPoint - f3TriVert3);
+
+                const float fDot1 = glm::dot(f3TriNorm1, f3Cross1);
+                const float fDot2 = glm::dot(f3TriNorm2, f3Cross2);
+                const float fDot3 = glm::dot(f3TriNorm3, f3Cross3);
+
+                if (fDot1 > 0.f && fDot2 > 0.f && fDot3 > 0.f) {
+                    const glm::vec2& f2TriangleUv1 = arg_inpObjectUvCoords[idx_reflect_tri * 3 + 0];
+                    const glm::vec2& f2TriangleUv2 = arg_inpObjectUvCoords[idx_reflect_tri * 3 + 1];
+                    const glm::vec2& f2TriangleUv3 = arg_inpObjectUvCoords[idx_reflect_tri * 3 + 2];
+
+                    const glm::vec3 f3TriQVert1 = f3TestPoint - f3TriVert1;
+                    const glm::vec3 f3TriQVert2 = f3TestPoint - f3TriVert2;
+                    const glm::vec3 f3TriQVert3 = f3TestPoint - f3TriVert3;
+
+                    float fTriangleArea = glm::length(glm::cross(f3TriEdge1, -f3TriEdge3));
+                    float fRatio1 = glm::length(glm::cross(f3TriQVert2, f3TriQVert3)) / fTriangleArea;
+                    float fRatio2 = glm::length(glm::cross(f3TriQVert3, f3TriQVert1)) / fTriangleArea;
+                    float fRatio3 = glm::length(glm::cross(f3TriQVert1, f3TriQVert2)) / fTriangleArea;
+
+                    glm::vec2 f2PointUv = f2TriangleUv1 * fRatio1 + f2TriangleUv2 * fRatio2 + f2TriangleUv3 * fRatio3;
+
+                    glm::vec2 f2TexCoord(f2PointUv.x * (float)arg_indTexWidth, f2PointUv.y * (float)arg_indTexHeight);
+
+                    if (static_cast<uint32_t>(f2TexCoord.x) < arg_indTexWidth && static_cast<uint32_t>(f2TexCoord.y) < arg_indTexHeight) {
+                        arg_outTexture[(uint32_t)f2TexCoord.x + ((uint32_t)f2TexCoord.y * arg_indTexWidth)] = 0xAAAAAAFF;
+                    }
+                }
             }
         }
     }
@@ -550,7 +596,7 @@ namespace CpuRayTracing
 
                     //Now cycle through all the other objects
                     for (auto idx_other_obj = 0u; idx_other_obj < dObjectCount; idx_other_obj++) {
-                        //if (idx_other_obj == idx_obj) continue;
+                        if (idx_other_obj == idx_obj) continue; //No self reflections for now
 
                         glm::vec3& f3hAabBox = m_pvecObjectAabBox->at(idx_other_obj);
                         glm::vec3& f3hObjectLoc = m_pvecObjectLocation->at(idx_other_obj);
@@ -585,6 +631,18 @@ namespace CpuRayTracing
                             *(m_pvecObjectVertices.get()),
                             f3hObjectLoc,
                             f4hObjectOrt);
+
+                        CpuCastReflectionToTextures(
+                            (*(m_pvecOutTextures.get()))[idx_other_obj],
+                            vecOutRayTriIntersect,
+                            vecOutRayTriIntersectParam,
+                            vecReflectedRayDirections,
+                            vecReflectedRayOrigins,
+                            *(m_pvecObjectVertices.get()),
+                            *(m_pvecObjectVNormals.get()),
+                            *(m_pvecObjectUvCoords.get()),
+                            dimObjectTextureDims.first,
+                            dimObjectTextureDims.second);
                     }
 
                     m_pvecRayNormals->erase(m_pvecRayNormals->begin(), m_pvecRayNormals->end());
