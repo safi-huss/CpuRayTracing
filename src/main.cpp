@@ -1,7 +1,7 @@
 #include "app.h"
 #include "cpuraytracing.h"
 
-const uint32_t LEVEL_0_TEXTURE_SIDE_LENGTH = 128;
+const uint32_t LEVEL_0_TEXTURE_SIDE_LENGTH = 16;
 
 void WriteTexture(std::string arg_strFilename, std::vector<uint32_t> arg_vecTexture, uint32_t arg_dTextureWidth, uint32_t arg_dTextureHeight)
 {

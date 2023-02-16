@@ -31,9 +31,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Makefile" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="src\config.mk" />
   </ItemGroup>
 </Project>
